@@ -19,10 +19,15 @@ body{
   background: linear-gradient(180deg, #fff7fb 0%, #f8fafc 100%);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .calculator-container{
   padding: 24px 18px;
+  width: 100%;
   max-width: 920px;
   margin: 0 auto;
 }
@@ -32,7 +37,7 @@ body{
   font-size: 30px;
   font-weight: 800;
   letter-spacing: -0.3px;
-  color: var(--text);
+  color: var(--pink-dark);
 }
 
 .calculator-subtitle{
@@ -60,6 +65,7 @@ body{
 .controls-container{
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
@@ -83,9 +89,8 @@ body{
   overflow-x: auto;
   padding-bottom: 6px;
   margin-bottom: 14px;
-}
-
-.matrix-input-wrapper{
+  display: flex;
+  justify-content: center;
   background: rgba(255, 228, 241, 0.35);
   border: 1px solid rgba(236,72,153,0.15);
   border-radius: 18px;
@@ -133,6 +138,7 @@ body{
 
 .button-row{
   display: flex;
+  justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 8px;
@@ -183,6 +189,14 @@ body{
   animation: fadeIn 0.35s ease-in-out;
 }
 
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
 .result-card{
   margin-top: 16px;
   padding: 16px;
@@ -214,7 +228,6 @@ body{
 .result-card.non-singular{
   background: #ecfdf5;
   border-left: 6px solid #34d399;
-  z
 }
 
 .result-header{
@@ -327,6 +340,18 @@ body{
   font-weight: 900;
 }
 
+.cell-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+  opacity: 0.6;
+}
+
+.cell-green {
+  background-color: #dcfce7;
+  color: #166534;
+  font-weight: bold;
+}
+
 .sign-box-container{
   display: flex;
   gap: 10px;
@@ -421,16 +446,16 @@ body{
 .det-color{ color: #059669; font-weight: 900; }
 .op-color{ margin: 0 14px; color: #d1d5db; font-weight: bold; }
 
-.final-equation-box{
-  font-family: 'Times New Roman', serif;
+.final-equation-box {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--pink-dark);
   font-size: 1.25em;
   text-align: center;
   background: #fff;
   padding: 14px;
   border-radius: 16px;
-  border: 1px dashed rgba(5,150,105,0.55);
+  border: 1px dashed var(--pink);
 }
-
 
 .floating-backtop{
   position: fixed;
@@ -482,6 +507,7 @@ body{
 }
 
 .header-card{
+  text-align: center;
   background: rgba(255,255,255,0.85);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -509,4 +535,42 @@ body{
   background: #ffe4e6;
   color: #9f1239;
   border: 1px solid rgba(251,113,133,0.45);
+}
+
+.app-footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 0.7em;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.nested-steps {
+  margin-left: 20px;
+  border-left: 2px solid #eee;
+  padding-left: 10px;
+}
+
+.final-sum-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px dashed #eee;
+}
+
+@media print {
+  .input-card, .action-buttons, .floating-backtop {
+      display: none;
+  }
+  .calculator-container {
+      max-width: 100%;
+      box-shadow: none;
+  }
+  .results-section, .steps-wrapper {
+      display: block !important;
+  }
+  body {
+      background: white;
+      display: block;
+  }
 }

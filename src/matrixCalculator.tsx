@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { calculateDeterminant, type Step, type MatrixAnalysis } from './matrixLogic';
 import './matrixCalculator.css';
 
@@ -16,17 +16,31 @@ const getOrdinal = (n: number): string => {
   return n + "th";
 };
 
+const matrixToLatex = (matrix: number[][]): string => {
+    return `\\begin{bmatrix} ${matrix.map(row => row.join(' & ')).join(' \\\\ ')} \\end{bmatrix}`;
+};
+
+interface ExpansionGroup {
+  type: 'group';
+  expand: Step & { type: 'expand' };
+  children: (Step | ExpansionGroup)[];
+  final: Step & { type: 'final_sum' };
+}
+type RenderItem = Step | ExpansionGroup;
+
 export default function MatrixCalculator() {
   const [size, setSize] = useState<number>(3);
   const [matrix, setMatrix] = useState<string[][]>(createEmptyMatrix(3));
   const [result, setResult] = useState<MatrixAnalysis | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
 
   const handleSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSize = parseInt(e.target.value, 10);
     setSize(newSize);
     setMatrix(createEmptyMatrix(newSize));
     setResult(null);
+    setShowSteps(false);
   };
 
   const handleMatrixChange = (row: number, col: number, value: string) => {
@@ -39,6 +53,7 @@ export default function MatrixCalculator() {
   const handleCalculate = () => {
     setIsCalculating(true);
     setResult(null);
+    setShowSteps(false);
 
     setTimeout(() => {
         const numericMatrix = matrix.map(row =>
@@ -63,6 +78,62 @@ export default function MatrixCalculator() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handlePrintPdf = () => {
+      setShowSteps(true);
+      setTimeout(() => {
+          window.print();
+      }, 300);
+  };
+
+  const handleExportLatex = () => {
+      if (!result) return;
+      let latex = `\\section*{Determinant Calculation}\n\\[ \\det(A) = ${result.determinant} \\]\n\\subsection*{Steps}\n\\begin{itemize}\n`;
+      
+      result.steps.forEach(step => {
+          if (step.type === 'start') {
+              latex += `\\item Input Matrix: \\[ ${matrixToLatex(step.matrix)} \\]\n`;
+          } else if (step.type === 'expand') {
+              latex += `\\item Expanded along ${step.source} ${step.index + 1}.\n`;
+          } else if (step.type === 'calc_2x2') {
+              latex += `\\item 2x2 Determinant: ${step.result}\n`;
+          } else if (step.type === 'final_sum') {
+              latex += `\\item Final Sum: ${step.result}\n`;
+          }
+      });
+      latex += `\\end{itemize}`;
+
+      navigator.clipboard.writeText(latex).then(() => alert("LaTeX copied to clipboard!"));
+  };
+
+  const groupedSteps = useMemo(() => {
+    if (!result || !result.steps) return [];
+    
+    const root: RenderItem[] = [];
+    const stack: RenderItem[][] = [root];
+
+    result.steps.forEach(step => {
+        const currentList = stack[stack.length - 1];
+
+        if (step.type === 'expand') {
+            const group: ExpansionGroup = { type: 'group', expand: step, children: [], final: null as any };
+            currentList.push(group);
+            stack.push(group.children);
+        } else if (step.type === 'final_sum') {
+            stack.pop();
+            const parentList = stack[stack.length - 1];
+            const group = parentList[parentList.length - 1] as ExpansionGroup;
+            if (group && group.type === 'group') {
+                group.final = step;
+            } else {
+                parentList.push(step);
+            }
+        } else {
+            currentList.push(step);
+        }
+    });
+    return root;
+  }, [result]);
+
   const renderMiniMatrix = (m: number[][], highlightRow: number = -1, highlightCol: number = -1) => (
     <div className="mini-matrix-wrapper">
       <table className="mini-matrix">
@@ -84,99 +155,181 @@ export default function MatrixCalculator() {
     </div>
   );
 
-  const renderStep = (step: Step, index: number) => {
+  const renderCrossedMatrix = (m: number[][], crossRow: number, crossCol: number) => (
+    <div className="mini-matrix-wrapper">
+      <table className="mini-matrix">
+        <tbody>
+          {m.map((row, i) => (
+            <tr key={i}>
+              {row.map((val, j) => {
+                const isCrossed = i === crossRow || j === crossCol;
+                return (
+                  <td key={j} className={`mini-cell ${isCrossed ? 'cell-red' : 'cell-green'}`}>
+                    {val}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderStep = (item: RenderItem, index: number) => {
+    if (item.type === 'group') {
+        const { expand, children, final } = item;
+        const isRow = expand.source === 'row';
+        const safeIndex = expand.index !== undefined ? expand.index : 0;
+        const ordinalText = getOrdinal(safeIndex + 1);
+
+        return (
+            <div key={`group-${index}`} className="step-card">
+                <h4 className="step-title">Cofactor Expansion Process</h4>
+
+                <div className="sub-step">
+                    <strong className="sub-step-title">1. Choose a Row or Column</strong>
+                    <p className="sub-step-desc">
+                        Select any row or column to expand along. Choose one with the most zeros to simplify calculations.
+                    </p>
+                    <div className="selection-box">
+                        {expand.matrix && renderMiniMatrix(
+                            expand.matrix,
+                            isRow ? safeIndex : -1,
+                            isRow ? -1 : safeIndex
+                        )}
+                        <p style={{margin: 0}}>
+                            We selected the <strong>{ordinalText} {isRow ? 'Row' : 'Column'}</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="sub-step">
+                    <strong className="sub-step-title">2. Determine the Sign Pattern</strong>
+                    <p className="sub-step-desc">
+                        Use the formula <code style={{background: '#eee', padding: '2px 4px'}}>(-1)<sup>i+j</sup></code> for each element.
+                    </p>
+                    <div className="sign-box-container">
+                        {expand.terms.map((t, i) => (
+                            <div key={i} className="sign-box">
+                                <strong>{t.value}</strong> &rarr; <strong>{t.sign > 0 ? 'Positive (+)' : 'Negative (-)'}</strong>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="sub-step">
+                     <strong className="sub-step-title">3. Find the Minor (Smaller Matrix)</strong>
+                     <p className="sub-step-desc">
+                        For each element, "cross out" its row and column to get a smaller matrix.
+                     </p>
+                     <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px'}}>
+                        {expand.terms.map((t, i) => {
+                            const rowIdx = isRow ? safeIndex : i;
+                            const colIdx = isRow ? i : safeIndex;
+                            return (
+                                <div key={i} style={{textAlign: 'center'}}>
+                                    {renderCrossedMatrix(expand.matrix, rowIdx, colIdx)}
+                                    <div style={{fontSize: '0.85em', marginTop: '5px', color: '#666'}}>Minor for {t.value}</div>
+                                </div>
+                            );
+                        })}
+                     </div>
+                </div>
+
+                <div>
+                    <strong className="sub-step-title">4. Calculate the Determinant of the Minor</strong>
+                    <p className="sub-step-desc">
+                        Find the determinant of that smaller submatrix.
+                    </p>
+                    <div className="formula-box">
+                        <strong style={{color: '#e65100', display: 'block', marginBottom: '10px'}}>Expansion Formula:</strong>
+                        
+                        <div className="formula-math">
+                            <span style={{marginRight: '10px'}}>det(A) = </span>
+                            {expand.terms.map((t, i) => (
+                                <React.Fragment key={i}>
+                                    {i > 0 && <span style={{margin: '0 8px', fontWeight: 'bold'}}>+</span>}
+                                    <span className="formula-term">
+                                        <span style={{fontWeight: 'bold', color: '#d32f2f'}}>{t.sign > 0 ? '' : '-'}{t.value}</span>
+                                        <span style={{margin: '0 6px'}}>&times;</span>
+                                        <span style={{fontStyle: 'italic', marginRight: '4px'}}>det</span>
+                                        {renderMiniMatrix(t.minor)}
+                                    </span>
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {children.length > 0 && (
+                    <div className="nested-steps">
+                        {children.map((child, i) => renderStep(child, i))}
+                    </div>
+                )}
+
+                {final && (
+                    <div className="final-sum-section">
+                        <strong className="sub-step-title">5. Multiply and Sum the Results</strong>
+                         <p className="sub-step-desc" style={{marginBottom: '15px'}}>
+                            Multiply the element by its sign and the determinant of its minor, then sum them up.
+                         </p>
+                         
+                         <div className="term-breakdown-box">
+                            {final.terms && final.terms.map((t, i) => (
+                               <div key={i} className="breakdown-row">
+                                   <span className="val-color">{t.value}</span> 
+                                   <span className="label-small"></span>
+                                   
+                                   <span className="op-color">&times;</span>
+
+                                   <span className="sign-color">{t.sign > 0 ? '+1' : '-1'}</span> 
+                                   <span className="label-small"></span>
+                                   
+                                   <span className="op-color">&times;</span>
+
+                                   <span className="det-color">{t.det}</span> 
+                                   <span className="label-small"></span>
+
+                                   <span style={{margin: '0 15px', color: '#333'}}>=</span> 
+                                   <strong>{t.value * t.sign * t.det}</strong>
+                               </div>
+                            ))}
+                         </div>
+
+                         <div className="final-equation-box">
+                             <div style={{marginBottom: '10px'}}>
+                                <span style={{color: '#555', fontSize: '0.8em', marginRight: '10px', fontFamily: 'sans-serif'}}>Determinant:</span>
+                                {final.terms && final.terms.map((t, i) => {
+                                    const termValue = t.value * t.sign * t.det;
+                                    return (
+                                        <span key={i}>
+                                            {i > 0 ? ' + ' : ''}
+                                            {termValue}
+                                        </span>
+                                    );
+                                })}
+                                {' = '}
+                                <strong>{final.result}</strong>
+                             </div>
+                         </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    const step = item as Step;
     switch (step.type) {
       case 'start':
         return (
             <div key={index} className="step-container">
-               <h3 className="section-title">Calculation Setup</h3>
+               <h3 className="section-title">Step-By-Step Solution</h3>
                <div className="setup-row">
                   <span className="setup-label">Finding determinant of:</span>
                   {renderMiniMatrix(step.matrix)}
                </div>
             </div>
-        );
-
-      case 'expand':
-        const isRow = step.source === 'row';
-        const safeIndex = step.index !== undefined ? step.index : 0;
-        const ordinalText = getOrdinal(safeIndex + 1);
-        
-        return (
-          <div key={index} className="step-card">
-            <h4 className="step-title">Cofactor Expansion Process</h4>
-
-            <div className="sub-step">
-                <strong className="sub-step-title">1. Choose a Row or Column</strong>
-                <p className="sub-step-desc">
-                    Select any row or column to expand along; choosing one with the most zeros simplifies calculations.
-                </p>
-                <div className="selection-box">
-                    {step.matrix && renderMiniMatrix(
-                        step.matrix,
-                        isRow ? safeIndex : -1,
-                        isRow ? -1 : safeIndex
-                    )}
-                    <p style={{margin: 0}}>
-                        We selected the <strong>{ordinalText} {isRow ? 'Row' : 'Column'}</strong>.
-                    </p>
-                </div>
-            </div>
-
-            <div className="sub-step">
-                <strong className="sub-step-title">2. Determine the Sign Pattern</strong>
-                <p className="sub-step-desc">
-                    Use the formula <code style={{background: '#eee', padding: '2px 4px'}}>(-1)<sup>i+j</sup></code> for each element.
-                </p>
-                <div className="sign-box-container">
-                    {step.terms.map((t, i) => (
-                        <div key={i} className="sign-box">
-                            <strong>{t.value}</strong> &rarr; <strong>{t.sign > 0 ? 'Positive (+)' : 'Negative (-)'}</strong>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="sub-step">
-                 <strong className="sub-step-title">3. Find the Minor</strong>
-                 <p className="sub-step-desc">
-                    For each element, "cross out" its row and column to get the minor matrix.
-                 </p>
-                 <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px'}}>
-                    {step.terms.map((t, i) => (
-                        <div key={i} style={{textAlign: 'center'}}>
-                            {renderMiniMatrix(t.minor)}
-                            <div style={{fontSize: '0.85em', marginTop: '5px', color: '#666'}}>Minor for {t.value}</div>
-                        </div>
-                    ))}
-                 </div>
-            </div>
-
-            <div>
-                <strong className="sub-step-title">4. Calculate the Determinant of the Minor</strong>
-                <p className="sub-step-desc">
-                    Find the determinant of that smaller submatrix.
-                </p>
-                <div className="formula-box">
-                    <strong style={{color: '#e65100', display: 'block', marginBottom: '10px'}}>Expansion Formula:</strong>
-                    
-                    <div className="formula-math">
-                        <span style={{marginRight: '10px'}}>det(A) = </span>
-                        {step.terms.map((t, i) => (
-                            <React.Fragment key={i}>
-                                {i > 0 && <span style={{margin: '0 8px', fontWeight: 'bold'}}>+</span>}
-                                <span className="formula-term">
-                                    <span style={{fontWeight: 'bold', color: '#d32f2f'}}>{t.sign > 0 ? '' : '-'}{t.value}</span>
-                                    <span style={{margin: '0 6px'}}>&times;</span>
-                                    <span style={{fontStyle: 'italic', marginRight: '4px'}}>det</span>
-                                    {renderMiniMatrix(t.minor)}
-                                </span>
-                            </React.Fragment>
-                        ))}
-                    </div>
-                </div>
-            </div>
-          </div>
         );
 
       case 'calc_2x2':
@@ -193,61 +346,6 @@ export default function MatrixCalculator() {
             </div>
         );
 
-      case 'sub_calculation':
-        return null;
-
-      case 'final_sum':
-        return (
-          <div key={index} className="final-step-card">
-             <strong className="final-title">5. Multiply and Sum the Results</strong>
-             <p className="sub-step-desc" style={{marginBottom: '15px'}}>
-                Multiply the element by its sign and the determinant of its minor, then sum them up.
-             </p>
-             
-             <div className="term-breakdown-box">
-                <strong style={{color: '#555', display: 'block', marginBottom: '15px'}}>Term Breakdown:</strong>
-                {step.terms && step.terms.map((t, i) => (
-                   <div key={i} className="breakdown-row">
-                       <span className="val-color">{t.value}</span> 
-                       <span className="label-small"></span>
-                       
-                       <span className="op-color">&times;</span>
-
-                       <span className="sign-color">{t.sign > 0 ? '+1' : '-1'}</span> 
-                       <span className="label-small"></span>
-                       
-                       <span className="op-color">&times;</span>
-
-                       <span className="det-color">{t.det}</span> 
-                       <span className="label-small"></span>
-
-                       <span style={{margin: '0 15px', color: '#333'}}>=</span> 
-                       <strong>{t.value * t.sign * t.det}</strong>
-                   </div>
-                ))}
-             </div>
-
-             <div className="final-equation-box">
-                 <div style={{marginBottom: '10px'}}>
-                    <span style={{color: '#555', fontSize: '0.8em', marginRight: '10px', fontFamily: 'sans-serif'}}>Total:</span>
-                    {step.terms && step.terms.map((t, i) => {
-                        const termValue = t.value * t.sign * t.det;
-                        return (
-                            <span key={i}>
-                                {i > 0 ? ' + ' : ''}
-                                {termValue}
-                            </span>
-                        );
-                    })}
-                    {' = '}
-                    <strong>{step.result}</strong>
-                 </div>
-             </div>
-             <div style={{fontSize: '0.9em', color: '#555', borderTop: '1px solid #c8e6c9', paddingTop: '10px', marginTop: '10px'}}>
-                 This final value is the determinant of the original matrix.
-             </div>
-          </div>
-        );
       default:
         return null;
     }
@@ -256,13 +354,12 @@ export default function MatrixCalculator() {
   return (
     <div className="calculator-container">
       <div className="header-card">
-      <h1 className="calculator-title">Cofactor Expansion Calculator</h1>
+      <h1 className="calculator-title">Determinant Calculator</h1>
       <p className="calculator-subtitle">
         A step-by-step determinant calculator using cofactor expansion.
       </p>
       </div>
       
-
       <div className="input-card">
         <div className="controls-container">
             <label className="size-label">Matrix Size: </label>
@@ -320,6 +417,7 @@ export default function MatrixCalculator() {
             onClick={() => {
               setMatrix(createEmptyMatrix(size));
               setResult(null);
+              setShowSteps(false);
             }}
             disabled={isCalculating}
           >
@@ -334,7 +432,7 @@ export default function MatrixCalculator() {
           <div className={`result-card ${result.isSingular ? "singular" : "non-singular"}`}>
             <div className="result-header">
               <div className="result-line">
-                <span className="final-answer-label">Final Answer: </span>
+                <span className="final-answer-label">Determinant: </span>
                 <span className="final-answer-value">{result.determinant}</span>
               </div>
 
@@ -345,15 +443,34 @@ export default function MatrixCalculator() {
 
             <div className="result-message">{result.message}</div>
           </div>
+        
+          <div className="action-buttons">
+              <button className="secondary-button" onClick={() => setShowSteps(!showSteps)}>
+                  {showSteps ? "Hide Steps" : "Show Solution"}
+              </button>
+              <button className="secondary-button" onClick={handlePrintPdf}>
+                  Save as PDF
+              </button>
+              <button className="secondary-button" onClick={handleExportLatex}>
+                  Export to LaTeX
+              </button>
+          </div>
 
-
-          {result.steps.length > 0 ? result.steps.map(renderStep) : <p>Steps omitted for performance.</p>}
+          {showSteps && (
+             <div className="steps-wrapper">
+                {groupedSteps.length > 0 ? groupedSteps.map((s, i) => renderStep(s, i)) : <p>Steps omitted for performance.</p>}
+             </div>
+          )}
           
           <button className="floating-backtop" onClick={handleBackToTop}>
             ↑ Top
           </button>
         </div>
       )}
+
+      <footer className="app-footer">
+        <p>De Joya • Balan • Esquejo • Nepomuceno • Omela </p>
+      </footer>
     </div>
   );
 }
