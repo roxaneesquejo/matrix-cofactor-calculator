@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { calculateDeterminant, type Step, type MatrixAnalysis } from './matrixLogic';
 import './matrixCalculator.css';
 
@@ -29,6 +29,14 @@ interface ExpansionGroup {
 type RenderItem = Step | ExpansionGroup;
 
 export default function MatrixCalculator() {
+  const [screen, setScreen] = useState<"home" | "calculator">("home");
+  const [activeChip, setActiveChip] = useState<number>(0);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+    useEffect(() => {
+        document.body.classList.toggle("dark-mode", darkMode);
+    }, [darkMode]);
+
+
   const [size, setSize] = useState<number>(3);
   const [matrix, setMatrix] = useState<string[][]>(createEmptyMatrix(3));
   const [result, setResult] = useState<MatrixAnalysis | null>(null);
@@ -104,6 +112,25 @@ export default function MatrixCalculator() {
 
       navigator.clipboard.writeText(latex).then(() => alert("LaTeX copied to clipboard!"));
   };
+
+  const startCalculator = (initialSize: number = 3) => {
+    setSize(initialSize);
+    setMatrix(createEmptyMatrix(initialSize));
+    setResult(null);
+    setIsCalculating(false);
+    setShowSteps(false);
+    setScreen("calculator");
+  };
+
+  const goHomeAndReset = () => {
+    setSize(3);
+    setMatrix(createEmptyMatrix(3));
+    setResult(null);
+    setIsCalculating(false);
+    setShowSteps(false);
+    setScreen("home");
+  };
+
 
   const groupedSteps = useMemo(() => {
     if (!result || !result.steps) return [];
@@ -351,13 +378,102 @@ export default function MatrixCalculator() {
     }
   };
 
+  if (screen === "home") {
+    return (
+      <div className="calculator-container home-page">
+        
+        <button
+            className="floating-theme"
+            onClick={() => setDarkMode(!darkMode)}
+
+            type="button"
+          >
+            {darkMode ? "☀️" : "🌙"}
+          </button> 
+
+        <div className="home-card home-simple">
+        
+          <div className="home-blobs">
+            <span className="blob b1"></span>
+            <span className="blob b2"></span>
+            <span className="blob b3"></span>
+            <span className="blob b4"></span>
+            <span className="blob b5"></span>
+            <span className="blob b6"></span>
+          </div>
+
+          <h1 className="home-main-title">
+            Determinant Calculator <span className="title-sparkle">✦</span>
+          </h1>
+
+          <div className="home-chips">
+            {[
+              "Step-by-step Solution",
+              "Singular / Non-singular",
+              "Export to LaTeX",
+              "Save as PDF",
+            ].map((text, i) => (
+              <button
+                key={i}
+                className={`home-chip ${activeChip === i ? "active" : ""}`}
+                onClick={() => setActiveChip(i)}
+                type="button"
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+
+          <button className="calculate-button home-start" onClick={() => startCalculator(3)}>
+            Start Calculator 
+          </button>
+
+          <div className="home-mini-preview">
+            {activeChip === 0 && "Show the full cofactor expansion process beautifully."}
+            {activeChip === 1 && "Instantly tells if the matrix is singular or not."}
+            {activeChip === 2 && "Copy a LaTeX version for your reports."}
+            {activeChip === 3 && "Print-ready format for submission."}
+          </div>
+
+          <footer className="app-footer home-footer">
+            <p>De Joya • Balan • Esquejo • Nepomuceno • Omela</p>
+          </footer>
+        </div>
+      </div>
+    );
+  }
+
+
+
   return (
     <div className="calculator-container">
-      <div className="header-card">
-      <h1 className="calculator-title">Determinant Calculator</h1>
-      <p className="calculator-subtitle">
-        A step-by-step determinant calculator using cofactor expansion.
-      </p>
+
+      <button
+            className="floating-theme"
+            onClick={() => setDarkMode(!darkMode)}
+
+            type="button"
+          >
+            {darkMode ? "☀️" : "🌙"}
+          </button> 
+
+      <div className="header-card header-row">
+        <button
+          className="home-icon-btn"
+          onClick={goHomeAndReset}
+          type="button"
+        >
+          ← Home
+        </button>
+
+        <div className="header-text">
+          <h1 className="calculator-title">Determinant Calculator</h1>
+          <p className="calculator-subtitle">
+            A step-by-step determinant calculator using cofactor expansion.
+          </p>
+        </div>
+
+        <div className="header-spacer"></div>
       </div>
       
       <div className="input-card">
