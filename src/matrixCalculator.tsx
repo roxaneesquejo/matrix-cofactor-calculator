@@ -59,6 +59,10 @@ export default function MatrixCalculator() {
     }, 100);
   };
 
+  const handleBackToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const renderMiniMatrix = (m: number[][], highlightRow: number = -1, highlightCol: number = -1) => (
     <div className="mini-matrix-wrapper">
       <table className="mini-matrix">
@@ -85,9 +89,9 @@ export default function MatrixCalculator() {
       case 'start':
         return (
             <div key={index} className="step-container">
-               <h3 className="calculator-title">Calculation Setup</h3>
-               <div style={{fontSize: '1.1em'}}>
-                  <span style={{marginRight: '10px'}}>Finding determinant of:</span>
+               <h3 className="section-title">Calculation Setup</h3>
+               <div className="setup-row">
+                  <span className="setup-label">Finding determinant of:</span>
                   {renderMiniMatrix(step.matrix)}
                </div>
             </div>
@@ -251,10 +255,13 @@ export default function MatrixCalculator() {
 
   return (
     <div className="calculator-container">
+      <div className="header-card">
       <h1 className="calculator-title">Cofactor Expansion Calculator</h1>
       <p className="calculator-subtitle">
         A step-by-step determinant calculator using cofactor expansion.
       </p>
+      </div>
+      
 
       <div className="input-card">
         <div className="controls-container">
@@ -299,25 +306,52 @@ export default function MatrixCalculator() {
             </div>
         </div>
 
-        <button 
+        <div className="button-row">
+          <button 
             onClick={handleCalculate}
             disabled={isCalculating}
             className="calculate-button"
-        >
+          >
             {isCalculating ? 'Calculating...' : 'Calculate Determinant'}
-        </button>
+          </button>
+
+          <button
+            className="secondary-button"
+            onClick={() => {
+              setMatrix(createEmptyMatrix(size));
+              setResult(null);
+            }}
+            disabled={isCalculating}
+          >
+            Clear All
+          </button>
+        </div>  
       </div>
 
       {result && (
         <div className="results-section">
+          
+          <div className={`result-card ${result.isSingular ? "singular" : "non-singular"}`}>
+            <div className="result-header">
+              <div className="result-line">
+                <span className="final-answer-label">Final Answer: </span>
+                <span className="final-answer-value">{result.determinant}</span>
+              </div>
+
+              <span className={`status-badge ${result.isSingular ? "bad" : "good"}`}>
+                {result.isSingular ? "Singular" : "Non-singular"}
+              </span>
+            </div>
+
+            <div className="result-message">{result.message}</div>
+          </div>
+
+
           {result.steps.length > 0 ? result.steps.map(renderStep) : <p>Steps omitted for performance.</p>}
           
-          <div className={`result-card ${result.isSingular ? 'singular' : 'non-singular'}`}>
-              <h3 className="result-title">Final Answer: {result.determinant}</h3>
-              <div className="result-message">
-                  {result.message}
-              </div>
-          </div>
+          <button className="floating-backtop" onClick={handleBackToTop}>
+            ↑ Top
+          </button>
         </div>
       )}
     </div>
