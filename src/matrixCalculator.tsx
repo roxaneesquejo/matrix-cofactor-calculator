@@ -429,7 +429,7 @@ export default function MatrixCalculator() {
           </button>
 
           <div className="home-mini-preview">
-            {activeChip === 0 && "Show the full cofactor expansion process beautifully."}
+            {activeChip === 0 && "Show the full cofactor expansion process."}
             {activeChip === 1 && "Instantly tells if the matrix is singular or not."}
             {activeChip === 2 && "Copy a LaTeX version for your reports."}
             {activeChip === 3 && "Print-ready format for submission."}
