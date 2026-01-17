@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { calculateDeterminant, type Step, type MatrixAnalysis } from './matrixlogic';
-import './MatrixCalculator.css'; 
+import { calculateDeterminant, type Step, type MatrixAnalysis } from './matrixLogic';
+import './matrixCalculator.css';
 
 const createEmptyMatrix = (size: number): string[][] => {
   return Array.from({ length: size }, () => Array.from({ length: size }, () => ''));
