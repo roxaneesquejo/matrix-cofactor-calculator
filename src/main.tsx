@@ -1,10 +1,10 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './determinant.tsx'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import MatrixCalculator from './MatrixCalculator' 
+import './MatrixCalculator.css' 
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <MatrixCalculator />
+  </React.StrictMode>,
 )

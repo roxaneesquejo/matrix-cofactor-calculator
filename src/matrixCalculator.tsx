@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { calculateDeterminant, type Step, type MatrixAnalysis } from './matrixlogic';
+import './MatrixCalculator.css'; 
 
 const createEmptyMatrix = (size: number): string[][] => {
   return Array.from({ length: size }, () => Array.from({ length: size }, () => ''));
@@ -59,22 +60,15 @@ export default function MatrixCalculator() {
   };
 
   const renderMiniMatrix = (m: number[][], highlightRow: number = -1, highlightCol: number = -1) => (
-    <div style={{ display: 'inline-block', verticalAlign: 'middle', margin: '5px' }}>
-      <table style={{ borderCollapse: 'collapse', fontSize: '0.85em', background: 'white', border: '1px solid #333' }}>
+    <div className="mini-matrix-wrapper">
+      <table className="mini-matrix">
         <tbody>
           {m.map((row, i) => (
             <tr key={i}>
               {row.map((val, j) => {
                 const isHighlighted = i === highlightRow || j === highlightCol;
                 return (
-                  <td key={j} style={{ 
-                      padding: '4px 8px', 
-                      textAlign: 'center', 
-                      background: isHighlighted ? '#fff9c4' : 'transparent',
-                      color: isHighlighted ? '#d32f2f' : 'inherit',
-                      fontWeight: isHighlighted ? 'bold' : 'normal',
-                      border: '1px solid #eee'
-                  }}>
+                  <td key={j} className={`mini-cell ${isHighlighted ? 'highlighted' : ''}`}>
                     {val}
                   </td>
                 );
@@ -90,8 +84,8 @@ export default function MatrixCalculator() {
     switch (step.type) {
       case 'start':
         return (
-            <div key={index} style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
-               <h3 style={{margin: '0 0 10px'}}>Calculation Setup</h3>
+            <div key={index} className="step-container">
+               <h3 className="calculator-title">Calculation Setup</h3>
                <div style={{fontSize: '1.1em'}}>
                   <span style={{marginRight: '10px'}}>Finding determinant of:</span>
                   {renderMiniMatrix(step.matrix)}
@@ -105,43 +99,43 @@ export default function MatrixCalculator() {
         const ordinalText = getOrdinal(safeIndex + 1);
         
         return (
-          <div key={index} style={{ margin: '20px 0', padding: '20px', background: '#fafafa', borderRadius: '8px', borderLeft: '5px solid #2196f3', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <h4 style={{marginTop: 0, color: '#1976d2'}}>Cofactor Expansion Process</h4>
+          <div key={index} className="step-card">
+            <h4 className="step-title">Cofactor Expansion Process</h4>
 
-            <div style={{marginBottom: '20px'}}>
-                <strong style={{color: '#333', fontSize: '1.05em'}}>1. Choose a Row or Column</strong>
-                <p style={{margin: '5px 0 10px', color: '#555', fontSize: '0.95em'}}>
+            <div className="sub-step">
+                <strong className="sub-step-title">1. Choose a Row or Column</strong>
+                <p className="sub-step-desc">
                     Select any row or column to expand along; choosing one with the most zeros simplifies calculations.
                 </p>
-                <div style={{padding: '10px', background: 'white', border: '1px dashed #ccc', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap'}}>
+                <div className="selection-box">
                     {step.matrix && renderMiniMatrix(
                         step.matrix,
                         isRow ? safeIndex : -1,
                         isRow ? -1 : safeIndex
                     )}
                     <p style={{margin: 0}}>
-                        We selected the <strong>{ordinalText} {isRow ? 'Row' : 'Column'}</strong> (highlighted).
+                        We selected the <strong>{ordinalText} {isRow ? 'Row' : 'Column'}</strong>.
                     </p>
                 </div>
             </div>
 
-            <div style={{marginBottom: '20px'}}>
-                <strong style={{color: '#333', fontSize: '1.05em'}}>2. Determine the Sign Pattern</strong>
-                <p style={{margin: '5px 0 10px', color: '#555', fontSize: '0.95em'}}>
+            <div className="sub-step">
+                <strong className="sub-step-title">2. Determine the Sign Pattern</strong>
+                <p className="sub-step-desc">
                     Use the formula <code style={{background: '#eee', padding: '2px 4px'}}>(-1)<sup>i+j</sup></code> for each element.
                 </p>
-                <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+                <div className="sign-box-container">
                     {step.terms.map((t, i) => (
-                        <div key={i} style={{padding: '5px 10px', background: '#e3f2fd', borderRadius: '4px', border: '1px solid #90caf9', fontSize: '0.9em'}}>
-                             <strong>{t.value}</strong> &rarr;<strong>{t.sign > 0 ? '+ (Positive)' : '- (Negative)'}</strong>
+                        <div key={i} className="sign-box">
+                            <strong>{t.value}</strong> &rarr; <strong>{t.sign > 0 ? 'Positive (+)' : 'Negative (-)'}</strong>
                         </div>
                     ))}
                 </div>
             </div>
 
-            <div style={{marginBottom: '20px'}}>
-                 <strong style={{color: '#333', fontSize: '1.05em'}}>3. Find the Minor</strong>
-                 <p style={{margin: '5px 0 10px', color: '#555', fontSize: '0.95em'}}>
+            <div className="sub-step">
+                 <strong className="sub-step-title">3. Find the Minor</strong>
+                 <p className="sub-step-desc">
                     For each element, "cross out" its row and column to get the minor matrix.
                  </p>
                  <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px'}}>
@@ -155,26 +149,19 @@ export default function MatrixCalculator() {
             </div>
 
             <div>
-                <strong style={{color: '#333', fontSize: '1.05em'}}>4. Calculate the Determinant of the Minor</strong>
-                <p style={{margin: '5px 0', color: '#555', fontSize: '0.95em'}}>
+                <strong className="sub-step-title">4. Calculate the Determinant of the Minor</strong>
+                <p className="sub-step-desc">
                     Find the determinant of that smaller submatrix.
                 </p>
-                <div style={{marginTop: '10px', padding: '15px', background: '#fff3e0', border: '1px solid #ffe0b2', borderRadius: '4px', overflowX: 'auto'}}>
+                <div className="formula-box">
                     <strong style={{color: '#e65100', display: 'block', marginBottom: '10px'}}>Expansion Formula:</strong>
-                    <div style={{fontFamily: 'Times New Roman, serif', fontSize: '1.2em', marginTop: '10px', lineHeight: '1.5', display: 'flex', flexWrap: 'wrap', alignItems: 'center'}}>
+                    
+                    <div className="formula-math">
                         <span style={{marginRight: '10px'}}>det(A) = </span>
                         {step.terms.map((t, i) => (
                             <React.Fragment key={i}>
                                 {i > 0 && <span style={{margin: '0 8px', fontWeight: 'bold'}}>+</span>}
-                                <span style={{
-                                    display: 'inline-flex', 
-                                    alignItems: 'center',
-                                    background: '#fff', 
-                                    padding: '4px 8px', 
-                                    borderRadius: '4px', 
-                                    border: '1px solid #eee', 
-                                    margin: '0 2px'
-                                }}>
+                                <span className="formula-term">
                                     <span style={{fontWeight: 'bold', color: '#d32f2f'}}>{t.sign > 0 ? '' : '-'}{t.value}</span>
                                     <span style={{margin: '0 6px'}}>&times;</span>
                                     <span style={{fontStyle: 'italic', marginRight: '4px'}}>det</span>
@@ -205,38 +192,30 @@ export default function MatrixCalculator() {
       case 'sub_calculation':
         return null;
 
-      // STEP 5: Breakdown with proper spacing
       case 'final_sum':
         return (
-          <div key={index} style={{ marginTop: '20px', padding: '20px', background: '#e8f5e9', border: '1px solid #c8e6c9', borderRadius: '8px' }}>
-             <strong style={{color: '#2e7d32', fontSize: '1.1em'}}>5. Multiply and Sum the Results</strong>
-             <p style={{margin: '5px 0 15px', color: '#555'}}>
+          <div key={index} className="final-step-card">
+             <strong className="final-title">5. Multiply and Sum the Results</strong>
+             <p className="sub-step-desc" style={{marginBottom: '15px'}}>
                 Multiply the element by its sign and the determinant of its minor, then sum them up.
              </p>
              
-             <div style={{margin: '15px 0', padding: '15px', background: '#fff', borderRadius: '6px', border: '1px solid #dcdcdc'}}>
+             <div className="term-breakdown-box">
                 <strong style={{color: '#555', display: 'block', marginBottom: '15px'}}>Term Breakdown:</strong>
                 {step.terms && step.terms.map((t, i) => (
-                   <div key={i} style={{
-                       marginBottom: '10px', 
-                       fontSize: '1.1em', 
-                       fontFamily: 'monospace', 
-                       color: '#333', 
-                       borderBottom: i < step.terms.length - 1 ? '1px dashed #eee' : 'none', 
-                       paddingBottom: '8px'
-                   }}>
-                       <span style={{color: '#d32f2f', fontWeight: 'bold'}}>{t.value}</span> 
-                       <span style={{fontSize: '0.7em', color: '#888', marginLeft: '5px'}}></span>
+                   <div key={i} className="breakdown-row">
+                       <span className="val-color">{t.value}</span> 
+                       <span className="label-small"></span>
                        
-                       <span style={{margin: '0 15px', color: '#ccc', fontWeight: 'bold'}}>&times;</span>
+                       <span className="op-color">&times;</span>
 
-                       <span style={{color: '#1976d2', fontWeight: 'bold'}}>{t.sign > 0 ? '+1' : '-1'}</span> 
-                       <span style={{fontSize: '0.7em', color: '#888', marginLeft: '5px'}}></span>
+                       <span className="sign-color">{t.sign > 0 ? '+1' : '-1'}</span> 
+                       <span className="label-small"></span>
                        
-                       <span style={{margin: '0 15px', color: '#ccc', fontWeight: 'bold'}}>&times;</span>
+                       <span className="op-color">&times;</span>
 
-                       <span style={{color: '#388e3c', fontWeight: 'bold'}}>{t.det}</span> 
-                       <span style={{fontSize: '0.7em', color: '#888', marginLeft: '5px'}}></span>
+                       <span className="det-color">{t.det}</span> 
+                       <span className="label-small"></span>
 
                        <span style={{margin: '0 15px', color: '#333'}}>=</span> 
                        <strong>{t.value * t.sign * t.det}</strong>
@@ -244,7 +223,7 @@ export default function MatrixCalculator() {
                 ))}
              </div>
 
-             <div style={{ fontFamily: 'Times New Roman, serif', fontSize: '1.4em', textAlign: 'center', background: '#fff', padding: '15px', borderRadius: '8px', border: '1px dashed #2e7d32' }}>
+             <div className="final-equation-box">
                  <div style={{marginBottom: '10px'}}>
                     <span style={{color: '#555', fontSize: '0.8em', marginRight: '10px', fontFamily: 'sans-serif'}}>Total:</span>
                     {step.terms && step.terms.map((t, i) => {
@@ -260,7 +239,7 @@ export default function MatrixCalculator() {
                     <strong>{step.result}</strong>
                  </div>
              </div>
-             <div style={{fontSize: '0.9em', color: '#555', borderTop: '1px solid #c8e6c9', paddingTop: '10px'}}>
+             <div style={{fontSize: '0.9em', color: '#555', borderTop: '1px solid #c8e6c9', paddingTop: '10px', marginTop: '10px'}}>
                  This final value is the determinant of the original matrix.
              </div>
           </div>
@@ -271,59 +250,48 @@ export default function MatrixCalculator() {
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Segoe UI, sans-serif', maxWidth: '900px', margin: '0 auto' }}>
-      <h1 style={{color: '#333'}}>Cofactor Expansion Calculator</h1>
-      <p style={{color: '#666', marginBottom: '20px'}}>
+    <div className="calculator-container">
+      <h1 className="calculator-title">Cofactor Expansion Calculator</h1>
+      <p className="calculator-subtitle">
         A step-by-step determinant calculator using cofactor expansion.
       </p>
 
-      <div style={{ marginBottom: '30px', padding: '25px', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', borderRadius: '10px' }}>
-        <div style={{marginBottom: '20px'}}>
-            <label style={{fontWeight: '600', marginRight: '10px'}}>Matrix Size: </label>
-            <select value={size} onChange={handleSizeChange} style={{padding: '8px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ccc'}}>
+      <div className="input-card">
+        <div className="controls-container">
+            <label className="size-label">Matrix Size: </label>
+            <select value={size} onChange={handleSizeChange} className="size-select">
             {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                 <option key={n} value={n}>{n} x {n}</option>
             ))}
             </select>
         </div>
 
-        <div style={{ overflowX: 'auto', paddingBottom: '10px' }}>
+        <div className="matrix-input-wrapper">
             <div 
+                className="matrix-grid"
                 style={{ 
-                display: 'grid', 
-                gridTemplateColumns: `30px repeat(${size}, 60px)`, 
-                gap: '8px', 
-                marginBottom: '20px',
-                alignItems: 'center'
+                   gridTemplateColumns: `30px repeat(${size}, 60px)` 
                 }}
             >
                 <div></div>
                 {Array.from({length: size}).map((_, j) => (
-                    <div key={`head-${j}`} style={{textAlign: 'center', fontWeight: 'bold', color: '#888', fontSize: '0.8em'}}>
+                    <div key={`head-${j}`} className="grid-header-label">
                         {j + 1}
                     </div>
                 ))}
 
                 {matrix.map((row, i) => (
                     <React.Fragment key={`row-${i}`}>
-                        <div style={{textAlign: 'right', fontWeight: 'bold', color: '#888', fontSize: '0.8em', paddingRight: '5px'}}>
+                        <div className="grid-row-label">
                             {i + 1}
                         </div>
                         {row.map((cell, j) => (
                             <input
                             key={`${i}-${j}`}
                             type="number"
+                            className="matrix-input"
                             value={cell}
                             onChange={(e) => handleMatrixChange(i, j, e.target.value)}
-                            style={{ 
-                                width: '60px', 
-                                height: '50px', 
-                                textAlign: 'center', 
-                                fontSize: '18px',
-                                border: '1px solid #ccc',
-                                borderRadius: '6px',
-                                background: '#f9f9f9'
-                            }}
                             />
                         ))}
                     </React.Fragment>
@@ -334,29 +302,19 @@ export default function MatrixCalculator() {
         <button 
             onClick={handleCalculate}
             disabled={isCalculating}
-            style={{ 
-                padding: '12px 30px', 
-                cursor: isCalculating ? 'not-allowed' : 'pointer', 
-                fontSize: '16px',
-                fontWeight: '600',
-                backgroundColor: isCalculating ? '#9e9e9e' : '#2196f3',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                transition: 'background 0.2s'
-            }}
+            className="calculate-button"
         >
             {isCalculating ? 'Calculating...' : 'Calculate Determinant'}
         </button>
       </div>
 
       {result && (
-        <div style={{ marginTop: '30px' }}>
+        <div className="results-section">
           {result.steps.length > 0 ? result.steps.map(renderStep) : <p>Steps omitted for performance.</p>}
           
-          <div style={{ marginTop: '20px', padding: '15px', background: result.isSingular ? '#ffebee' : '#e8f5e9', borderLeft: `5px solid ${result.isSingular ? '#c62828' : '#2e7d32'}`, borderRadius: '4px' }}>
-              <h3 style={{margin: '0'}}>Final Answer: {result.determinant}</h3>
-              <div style={{color: result.isSingular ? '#c62828' : '#2e7d32', marginTop: '5px'}}>
+          <div className={`result-card ${result.isSingular ? 'singular' : 'non-singular'}`}>
+              <h3 className="result-title">Final Answer: {result.determinant}</h3>
+              <div className="result-message">
                   {result.message}
               </div>
           </div>
